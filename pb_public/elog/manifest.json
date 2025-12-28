@@ -1,0 +1,40 @@
+[
+  {
+    "filename": "2025-12-28-ui-refactor.md",
+    "title": "UI Refactoring: Navigation & Experiment List",
+    "date": "2025-12-28",
+    "tags": [
+      "ui",
+      "refactor",
+      "navbar",
+      "frontend"
+    ]
+  },
+  {
+    "filename": "2025-12-28-fix-markdown-rendering.md",
+    "title": "Fix Markdown rendering in Experiment Logs",
+    "date": "2025-12-28",
+    "tags": [
+      "frontend",
+      "elog"
+    ]
+  },
+  {
+    "filename": "2025-12-27-add-docker-compose.md",
+    "title": "Add docker-compose for PocketBase",
+    "date": "2025-12-27",
+    "tags": [
+      "infra",
+      "dev"
+    ]
+  },
+  {
+    "filename": "2025-12-26-init.md",
+    "title": "Log System Initialization",
+    "date": "2025-12-26",
+    "tags": [
+      "meta",
+      "planning"
+    ]
+  }
+]

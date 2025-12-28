@@ -1,0 +1,22 @@
+[
+  {
+    "id": "exp-26W01-001",
+    "name": "写作训练",
+    "description": "收集作文素材,训练写作能力的小工具",
+    "status": "计划中",
+    "created": "2025-12-25T00:00:00.000Z",
+    "url": "https://lab.travis.wang/001",
+    "repo": "https://github.com/lab-travis-wang/001",
+    "icon": "✍️"
+  },
+  {
+    "id": "exp-25W52-000",
+    "name": "the LAB",
+    "description": "这个 Lab 本身就是一个实验",
+    "status": "已上线",
+    "created": "2025-12-25T00:00:00.000Z",
+    "url": "https://lab.travis.wang",
+    "repo": "https://github.com/lab-travis-wang/lab",
+    "icon": "⚗️"
+  }
+]

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Experiment logs - Lab</title>
+  <!-- Load local Tailwind from static assets -->
+  <script src="/static/js/tailwindcss_3.4.17.js"></script>
+  <!-- Load marked for markdown rendering -->
+  <script src="/static/js/marked_12.0.2.min.js"></script>
+  <script src="/static/js/navbar.js"></script>
+</head>
+
+<body class="bg-gray-50 text-gray-900 antialiased selection:bg-black selection:text-white">
+  <div id="app" class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <!-- Header -->
+    <header id="app-header" class="bg-white border-b border-gray-200 sticky top-0 z-50"></header>
+
+    <main class="py-12 flex-1">
+      <div class="max-w-4xl mx-auto px-4" id="main-content">
+        <!-- Content will be injected here -->
+        <div class="flex justify-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="mt-12 py-8 text-center text-gray-400 text-sm border-t border-gray-200">
+      <div class="max-w-4xl mx-auto px-4">
+        <p>&copy; <span id="year"></span> Travis Wang. Proudly build with ❤️ and AI.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    let currentLang = 'en';
+
+    const CACHE_BUST = String(Date.now());
+
+    function noCacheUrl(url) {
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}v=${encodeURIComponent(CACHE_BUST)}`;
+    }
+
+    // Initialize
+    document.getElementById('year').textContent = new Date().getFullYear();
+    window.addEventListener('load', () => {
+      // Init handled in route
+    });
+
+    // Language handling delegated to NavBar
+    // updateNavText removed as NavBar handles it
+
+
+    // Router (Hashtag based for logs)
+    window.addEventListener('hashchange', handleRoute);
+    window.addEventListener('load', () => {
+      // Check URL params for lang or use NavBar's
+      // NavBar handles lang initialization
+
+      handleRoute();
+    });
+
+    // Listen for lang changes from NavBar
+    window.addEventListener('lang-change', (e) => {
+      currentLang = e.detail.lang;
+
+      // Re-render
+      handleRoute();
+    });
+
+    // Configure markdown renderer once.
+    if (window.marked && typeof window.marked.setOptions === 'function' && typeof window.marked.Renderer === 'function') {
+      const renderer = new window.marked.Renderer();
+
+      renderer.heading = (text, level) => {
+        const base = 'font-bold tracking-tight text-gray-900';
+        const spacing = 'mt-5 mb-2';
+        if (level === 1) return `<h1 class="text-3xl ${base} mt-0 mb-4">${text}</h1>`;
+        if (level === 2) return `<h2 class="text-xl ${base} ${spacing}">${text}</h2>`;
+        if (level === 3) return `<h3 class="text-lg ${base} ${spacing}">${text}</h3>`;
+        if (level === 4) return `<h4 class="text-base ${base} ${spacing}">${text}</h4>`;
+        return `<h${level} class="text-sm ${base} ${spacing}">${text}</h${level}>`;
+      };
+
+      renderer.paragraph = (text) => `<p class="text-gray-700 leading-6 my-3">${text}</p>`;
+
+      renderer.strong = (text) => `<strong class="font-semibold text-gray-900">${text}</strong>`;
+      renderer.em = (text) => `<em class="italic">${text}</em>`;
+
+      renderer.codespan = (code) => `<code class="font-mono text-sm bg-gray-100 text-gray-900 px-1.5 py-0.5 rounded">${code}</code>`;
+      renderer.code = (code, lang) => {
+        const language = lang ? `language-${escapeHtml(lang)}` : '';
+        return `\n<pre class="my-4 rounded-lg bg-gray-900 text-gray-100 px-3 py-2.5 overflow-x-auto"><code class="font-mono text-sm ${language}">${escapeHtml(code)}</code></pre>\n`;
+      };
+
+      renderer.blockquote = (quote) => `<blockquote class="my-4 border-l-4 border-gray-200 pl-3 text-gray-600 italic">${quote}</blockquote>`;
+      renderer.hr = () => '<hr class="my-6 border-gray-200" />';
+
+      renderer.list = (body, ordered, start) => {
+        const tag = ordered ? 'ol' : 'ul';
+        const style = ordered ? 'list-decimal' : 'list-disc';
+        const startAttr = ordered && start && start !== 1 ? ` start="${start}"` : '';
+        return `<${tag}${startAttr} class="my-3 pl-5 ${style} text-gray-700">${body}</${tag}>`;
+      };
+      renderer.listitem = (text) => `<li class="my-0.5">${text}</li>`;
+
+      renderer.link = (href, title, text) => {
+        const safeHref = href ? escapeHtml(href) : '';
+        const safeTitle = title ? ` title="${escapeHtml(title)}"` : '';
+        return `<a class="text-blue-600 hover:text-blue-800 underline underline-offset-2" href="${safeHref}"${safeTitle}>${text}</a>`;
+      };
+
+      renderer.image = (href, title, text) => {
+        const safeHref = href ? escapeHtml(href) : '';
+        const safeTitle = title ? ` title="${escapeHtml(title)}"` : '';
+        const alt = text ? escapeHtml(text) : '';
+        return `<img class="my-4 max-w-full rounded-lg border border-gray-200" src="${safeHref}" alt="${alt}"${safeTitle} />`;
+      };
+
+      renderer.table = (header, body) => {
+        return `\n<div class="my-4 overflow-x-auto"><table class="w-full text-sm border border-gray-200 rounded-lg overflow-hidden"><thead class="bg-gray-50">${header}</thead><tbody>${body}</tbody></table></div>\n`;
+      };
+      renderer.tablerow = (content) => `<tr class="border-t border-gray-200">${content}</tr>`;
+      renderer.tablecell = (content, flags) => {
+        const alignClass = flags?.align ? ` text-${flags.align}` : '';
+        if (flags?.header) return `<th class="px-3 py-2 font-semibold text-gray-900 border-b border-gray-200${alignClass}">${content}</th>`;
+        return `<td class="px-3 py-2 text-gray-700 border-b border-gray-200${alignClass}">${content}</td>`;
+      };
+
+      window.marked.setOptions({
+        gfm: true,
+        breaks: true,
+        headerIds: false,
+        mangle: false,
+        renderer
+      });
+    }
+
+    async function handleRoute() {
+      const hash = window.location.hash;
+
+      // Initialize NavBar first
+      if (!hash || hash === '#/') {
+        NavBar.init('logs');
+      } else if (hash === '#/tasks') {
+        NavBar.init('tasks');
+      } else if (hash.startsWith('#/')) {
+        NavBar.init('logs');
+      } else {
+        NavBar.init('logs');
+      }
+
+      // Sync language BEFORE rendering
+      currentLang = NavBar.getLang();
+
+      if (!hash || hash === '#/') {
+        renderLogList();
+      } else if (hash === '#/tasks') {
+        renderTasks();
+      } else if (hash.startsWith('#/')) {
+        const filename = hash.substring(2);
+        renderLogDetail(filename);
+      } else {
+        renderLogList();
+      }
+    }
+
+    async function renderLogList() {
+      window.location.hash = '#/';
+      const content = document.getElementById('main-content');
+      content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
+
+      try {
+        const response = await fetch(noCacheUrl('/elog/manifest.json'), { cache: 'no-store' });
+        const logs = await response.json();
+        // Sort by date desc
+        logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+        let html = `
+                <div class="mb-10">
+                    <h1 class="text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '实验日志' : 'Experiment Logs'}</h1>
+                    <p class="mt-2 text-gray-500">${currentLang === 'zh' ? '记录实验进展与思考' : 'Tracking progress and thoughts'}</p>
+                </div>
+                <div class="space-y-4">
+                `;
+
+        logs.forEach(log => {
+          html += `
+                    <a href="#/${log.filename}" class="block group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200 hover:border-blue-300">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">${log.title}</h2>
+                                <div class="flex items-center gap-3 text-sm text-gray-500">
+                                    <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">${log.date}</span>
+                                    ${log.tags.map(tag => `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs">#${tag}</span>`).join('')}
+                                </div>
+                            </div>
+                            <div class="text-gray-400 group-hover:translate-x-1 transition-transform">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </div>
+                        </div>
+                    </a>
+                    `;
+        });
+
+        html += '</div>';
+        content.innerHTML = html;
+
+      } catch (err) {
+        console.error(err);
+        content.innerHTML = `<div class="text-red-500">Error loading logs: ${err.message}</div>`;
+      }
+    }
+
+    async function renderTasks() {
+      window.location.hash = '#/tasks';
+      const content = document.getElementById('main-content');
+      content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
+
+      try {
+        const response = await fetch(noCacheUrl('/elog/tasks.md'), { cache: 'no-store' });
+        if (!response.ok) throw new Error('Tasks file not found');
+        const markdown = await response.text();
+
+        // Simple Markdown Parser for Kanban
+        const lines = markdown.split('\n');
+        const board = [];
+        let currentColumn = null;
+
+        lines.forEach(line => {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('## ')) {
+            if (currentColumn) board.push(currentColumn);
+            currentColumn = {
+              title: trimmed.substring(3).trim(),
+              tasks: []
+            };
+          } else if (trimmed.startsWith('- [ ] ') || trimmed.startsWith('- [x] ')) {
+            if (currentColumn) {
+              const isDone = trimmed.startsWith('- [x] ');
+              const text = trimmed.substring(6).trim();
+              currentColumn.tasks.push({
+                text,
+                isDone
+              });
+            }
+          }
+        });
+        if (currentColumn) board.push(currentColumn);
+
+        // Render Kanban
+        let html = `
+            <div class="mb-8">
+                 <h1 class="text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '项目看板' : 'Project Kanban'}</h1>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto pb-8">
+            `;
+
+        board.forEach(col => {
+          html += `
+                <div class="bg-gray-100 rounded-xl p-4 flex flex-col h-full min-h-[300px]">
+                    <h3 class="font-bold text-gray-700 mb-4 px-2 flex items-center justify-between">
+                        ${col.title}
+                        <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">${col.tasks.length}</span>
+                    </h3>
+                    <div class="space-y-3 flex-1">
+                `;
+
+          if (col.tasks.length === 0) {
+            html += `<div class="text-gray-400 text-sm text-center py-8 italic">${currentLang === 'zh' ? '暂无任务' : 'No tasks'}</div>`;
+          } else {
+            col.tasks.forEach(task => {
+              html += `
+                        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">
+                            <div class="flex items-start gap-2">
+                                <div class="mt-1 ${task.isDone ? 'text-green-500' : 'text-gray-300'}">
+                                     ${task.isDone
+                  ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+                  : '<div class="w-4 h-4 border-2 border-current rounded-sm"></div>'
+                }
+                                </div>
+                                <span class="text-sm ${task.isDone ? 'text-gray-400 line-through' : 'text-gray-800'}">${task.text}</span>
+                            </div>
+                        </div>
+                        `;
+            });
+          }
+
+          html += `
+                    </div>
+                </div>
+                `;
+        });
+
+        html += '</div>';
+        content.innerHTML = html;
+
+      } catch (err) {
+        console.error(err);
+        content.innerHTML = `<div class="text-red-500">Error loading tasks: ${err.message}</div>`;
+      }
+    }
+
+    async function renderLogDetail(filename) {
+      window.location.hash = '#/' + filename;
+      const content = document.getElementById('main-content');
+      content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
+
+      try {
+        // Fetch manifest to get title
+        const manifestRes = await fetch(noCacheUrl('/elog/manifest.json'), { cache: 'no-store' });
+        const logs = await manifestRes.json();
+        const meta = logs.find(l => l.filename === filename);
+
+        const response = await fetch(noCacheUrl('/elog/' + filename), { cache: 'no-store' });
+        if (!response.ok) throw new Error('Log not found');
+        const markdown = await response.text();
+
+        const renderedHtml = (window.marked && typeof window.marked.parse === 'function')
+          ? window.marked.parse(markdown)
+          : `<pre class="whitespace-pre-wrap">${escapeHtml(markdown)}</pre>`;
+
+        content.innerHTML = `
+                <div class="max-w-3xl mx-auto">
+                    <div>
+                        <a href="#/" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors font-medium">
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            ${currentLang === 'zh' ? '返回日志列表' : 'Back to Logs'}
+                        </a>
+              </div>
+
+              <article class="max-w-none">
+                ${renderedHtml}
+              </article>
+                </div>
+                `;
+
+      } catch (err) {
+        console.error(err);
+        content.innerHTML = `<div class="text-red-500">Error loading log: ${err.message}</div>`;
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+  </script>
+</body>
+
+</html>

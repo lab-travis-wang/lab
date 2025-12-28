@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab - Travis Wang</title>
+  <!-- Load local Tailwind from static assets -->
+  <script src="/static/js/tailwindcss_3.4.17.js"></script>
+  <script src="/static/js/navbar.js"></script>
+
+  <style>
+    .lab-hero {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lab-hero-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .lab-hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .lab-hero-bg svg {
+      position: absolute;
+      right: -120px;
+      top: -80px;
+      width: min(680px, 92vw);
+      height: auto;
+      opacity: 0.22;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .lab-bubble {
+        animation: none !important;
+        opacity: 0.25;
+      }
+    }
+
+    .lab-bubble {
+      opacity: 0;
+      transform-box: fill-box;
+      transform-origin: center;
+      animation-name: lab-bubble-float;
+      animation-duration: var(--d, 3.6s);
+      animation-delay: var(--delay, 0s);
+      animation-timing-function: linear;
+      animation-iteration-count: infinite;
+    }
+
+    @keyframes lab-bubble-float {
+      0% {
+        transform: translate(0px, 0px) scale(0.75);
+        opacity: 0;
+      }
+
+      12% {
+        opacity: 0.55;
+      }
+
+      85% {
+        opacity: 0.25;
+      }
+
+      100% {
+        transform: translate(var(--dx, -24px), var(--dy, -170px)) scale(1.15);
+        opacity: 0;
+      }
+    }
+  </style>
+
+</head>
+
+<body class="bg-gray-50 text-gray-900 antialiased selection:bg-black selection:text-white">
+  <div id="app" class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <!-- Header -->
+    <header id="app-header" class="bg-white border-b border-gray-200 sticky top-0 z-50"></header>
+
+    <main class="py-12 flex-1">
+      <div class="max-w-4xl mx-auto px-4" id="main-content">
+        <!-- Content will be injected here -->
+        <div class="flex justify-center">
+          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="mt-12 py-8 text-center text-gray-400 text-sm border-t border-gray-200">
+      <div class="max-w-4xl mx-auto px-4">
+        <p>&copy; <span id="year"></span> Travis Wang. Proudly build with ❤️ and AI.</p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    let currentLang = 'en';
+
+    async function loadExperiments() {
+      const res = await fetch('/experiments.json', {
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to load experiments.json (${res.status})`);
+      }
+
+      const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid experiments.json: expected a JSON array');
+      }
+
+      return data;
+    }
+
+    function formatExperimentDisplayId(item) {
+      if (!item || typeof item !== 'object') return '';
+
+      if (typeof item.display_id === 'string' && item.display_id.trim()) {
+        return item.display_id.trim();
+      }
+
+      if (typeof item.number === 'number' && Number.isFinite(item.number)) {
+        return `#${String(item.number).padStart(3, '0')}`;
+      }
+
+      if (typeof item.number === 'string' && item.number.trim()) {
+        const n = item.number.trim();
+        if (/^#\d+$/.test(n)) return n;
+        if (/^\d+$/.test(n)) return `#${n.padStart(3, '0')}`;
+      }
+
+      if (typeof item.id === 'string' && item.id.trim()) {
+        const id = item.id.trim();
+        const m = id.match(/(\d+)$/);
+        if (m) return `#${m[1].padStart(3, '0')}`;
+        return `#${id}`;
+      }
+
+      return '';
+    }
+
+    // Initialize
+    document.getElementById('year').textContent = new Date().getFullYear();
+    window.addEventListener('load', () => {
+      // ... (Route handling moved here or kept later)
+    });
+
+    // Language handling delegated to NavBar
+    // updateNavText removed as NavBar handles it
+
+
+    // Router (Hashtag based)
+    window.addEventListener('hashchange', handleRoute);
+    window.addEventListener('load', () => {
+      // Check URL params for lang or use NavBar's
+      // NavBar handles lang initialization
+
+      handleRoute();
+    });
+
+    // Listen for lang changes from NavBar
+    window.addEventListener('lang-change', (e) => {
+      currentLang = e.detail.lang;
+
+      // Re-render current view if possible, or go home
+      // For simplicity, just re-render home if on home, or experiments if on experiments
+      const hash = window.location.hash;
+      if (hash.startsWith('#/experiments')) {
+        renderExperiments();
+      } else if (hash.startsWith('#/')) {
+        const id = hash.substring(2);
+        if (id) renderDetail(id);
+        else renderHome();
+      } else {
+        renderHome();
+      }
+    });
+
+    function handleRoute() {
+      const hash = window.location.hash;
+
+      // Initialize NavBar first to ensure correct language detection
+      if (!hash || hash === '#/') {
+        NavBar.init('home');
+      } else if (hash === '#/experiments') {
+        NavBar.init('experiments');
+      } else if (hash.startsWith('#/')) {
+        NavBar.init('experiments');
+      } else {
+        NavBar.init('home');
+      }
+
+      // Sync language BEFORE rendering
+      currentLang = NavBar.getLang();
+
+      if (!hash || hash === '#/') {
+        renderHome();
+      } else if (hash === '#/experiments') {
+        renderExperiments();
+      } else if (hash.startsWith('#/')) {
+        const id = hash.substring(2);
+        renderDetail(id);
+      } else {
+        renderHome();
+      }
+    }
+
+    // Views
+    function renderHome() {
+      window.location.hash = '#/';
+      const content = document.getElementById('main-content');
+
+      const texts = {
+        zh: {
+          hero: {
+            title: "一个完全公开运行的<br> AI 原生产品实验室",
+            subtitle: "从想法、设计、实现到上线，尽量由 AI 主导完成",
+            badges: [
+              "⚡️ 每周构建 1 个 MVP",
+              "📝 真实记录过程与结果",
+              "🔨 不隐藏失败，不包装成功"
+            ],
+            definition: [
+              "Lab 本身不是产品，而是所有实验的 入口索引 (Entry Point) 与 管理与观察层 (Control Plane)。",
+              "目标: 验证 <b>在 AI 深度参与的情况下，一个人是否可以长期、稳定地构建真实产品。</b>"
+            ],
+            cta: "查看所有实验"
+          },
+          cards: [
+            {
+              icon: "❓",
+              title: "为什么公开",
+              content: "大多数产品讨论停留在“想法”；少有人持续、系统地公开<b>真实执行与数据</b>。这里只找可复现的方法，而不是结论。"
+            },
+            {
+              icon: "🚀",
+              title: "如何运行",
+              content: "以<b>「周」</b>为最小运行单位。每周都会有一个实验进入「已构建」状态。实验完成后即冻结，不做长期维护。"
+            },
+            {
+              icon: "🤖",
+              title: "关于 AI",
+              content: "AI 是：产品经理、工程师、文案与数据分析。我只是：决策、取舍与审查。所有 AI 角色都有明确边界。"
+            },
+            {
+              icon: "💀",
+              title: "关于失败",
+              content: "失败是这个 Lab 的默认结果。没有数据的实验也会被记录。<b>只要留下可复用的资产，它就不是失败。</b>"
+            }
+          ]
+        },
+        en: {
+          hero: {
+            title: "A Strictly Public<br> AI-Native Product Lab",
+            subtitle: "From idea to launch, primarily driven by AI",
+            badges: [
+              "⚡️ Build 1 MVP / Week",
+              "📝 Truthfully Record Everything",
+              "🔨 No Hiding Failures"
+            ],
+            definition: [
+              "The Lab is not a product, but the Entry Point and Control Plane for all experiments.",
+              "Goal: Verify <b>if a single person can build real products long-term and stably with deep AI participation.</b>"
+            ],
+            cta: "View All Experiments"
+          },
+          cards: [
+            {
+              icon: "❓",
+              title: "Why Public",
+              content: "Most discussions stay at 'ideas'. Few publish <b>real execution and data</b>. I seek reproducible methods, not just conclusions."
+            },
+            {
+              icon: "🚀",
+              title: "How it runs",
+              content: "<b>Week</b> as the unit. One experiment 'built' every week. Frozen upon completion, no long-term maintenance."
+            },
+            {
+              icon: "🤖",
+              title: "About AI",
+              content: "AI is: PM, Engineer, Copywriter, Analyst. I am: Decision, Trade-off, Review. Roles are strictly defined."
+            },
+            {
+              icon: "💀",
+              title: "About Failure",
+              content: "Failure is the default result. Experiments with no data are also recorded. <b>As long as reusable assets are left, it is not failure.</b>"
+            }
+          ]
+        }
+      };
+
+      const t = currentLang === 'zh' ? texts.zh : texts.en;
+
+      content.innerHTML = `
+        <section class="lab-hero text-center py-16 mb-12">
+            <div class="lab-hero-bg" aria-hidden="true">
+              <svg viewBox="0 0 900 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Distillation flask (45° tilted) -->
+                <g transform="translate(610 240) rotate(45)">
+                  <!-- Neck -->
+                  <path d="M-30 -160 H30 V-10" stroke="#111827" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+                  <!-- Body outline -->
+                  <path d="M30 -10
+                           C105 15, 150 90, 132 168
+                           C115 250, 35 305, -40 290
+                           C-140 260, -195 165, -160 85
+                           C-132 25, -75 -2, -30 -10" stroke="#111827" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+                  <!-- Liquid level hint -->
+                  <path d="M-120 135 C-60 175, 35 175, 105 120" stroke="#111827" stroke-width="10" stroke-linecap="round" opacity="0.18"/>
+                  <!-- Mouth opening -->
+                  <path d="M-30 -160 H30" stroke="#111827" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
+
+                  <!-- Bubbles (inside -> outside) -->
+                  <g fill="#111827" opacity="0.75">
+                    <circle class="lab-bubble" cx="-20" cy="120" r="6" style="--dx:-38px; --dy:-220px; --d:3.4s; --delay:-0.2s" />
+                    <circle class="lab-bubble" cx="10" cy="150" r="4" style="--dx:-30px; --dy:-240px; --d:3.1s; --delay:-1.1s" />
+                    <circle class="lab-bubble" cx="45" cy="115" r="5" style="--dx:-26px; --dy:-210px; --d:3.8s; --delay:-2.0s" />
+                    <circle class="lab-bubble" cx="-60" cy="165" r="3.5" style="--dx:-44px; --dy:-260px; --d:3.6s; --delay:-2.6s" />
+                    <circle class="lab-bubble" cx="70" cy="155" r="3" style="--dx:-20px; --dy:-250px; --d:3.0s; --delay:-0.9s" />
+
+                    <!-- Bubbles closer to the neck -->
+                    <circle class="lab-bubble" cx="0" cy="30" r="4" style="--dx:-18px; --dy:-190px; --d:2.9s; --delay:-1.8s" />
+                    <circle class="lab-bubble" cx="-8" cy="0" r="3" style="--dx:-22px; --dy:-210px; --d:3.2s; --delay:-0.6s" />
+                    <circle class="lab-bubble" cx="12" cy="-30" r="2.8" style="--dx:-16px; --dy:-190px; --d:2.7s; --delay:-2.3s" />
+
+                    <!-- Outside bubbles (already out of mouth) -->
+                    <circle class="lab-bubble" cx="-10" cy="-175" r="5" style="--dx:-60px; --dy:-140px; --d:4.2s; --delay:-1.4s" />
+                    <circle class="lab-bubble" cx="20" cy="-165" r="3.5" style="--dx:-55px; --dy:-150px; --d:3.9s; --delay:-2.9s" />
+                  </g>
+                </g>
+              </svg>
+            </div>
+
+            <div class="lab-hero-content max-w-3xl mx-auto">
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight mb-6 text-black leading-tight">${t.hero.title}</h1>
+                <p class="text-xl text-gray-600 mb-8 leading-relaxed">
+                    ${t.hero.subtitle}
+                </p>
+                
+                <div class="space-y-4 mb-10">
+                    <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-gray-800 font-medium text-sm md:text-base">
+                        ${t.hero.badges.map((b, i) => `
+                            <span>${b}</span>
+                            ${i < t.hero.badges.length - 1 ? '<span class="hidden md:inline text-gray-300">|</span>' : ''}
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="prose prose-lg mx-auto text-gray-500 mb-12 text-left bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                    ${t.hero.definition.map(p => `<p class="mb-4 last:mb-0">${p}</p>`).join('')}
+                </div>
+
+                <div>
+                    <a href="#/experiments" class="inline-flex items-center justify-center px-8 py-3 text-base font-bold rounded-full text-white bg-black hover:bg-gray-800 transition-all hover:scale-105 shadow-lg">
+                        ${t.hero.cta}
+                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                    </a>
+                </div>
+            </div>
+        </section>
+        
+        <section class="max-w-5xl mx-auto grid md:grid-cols-2 gap-6 mb-16 px-4">
+            ${t.cards.map(card => `
+                <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow h-full">
+                    <div class="text-3xl mb-4">${card.icon}</div>
+                    <h3 class="font-bold text-lg mb-2 text-gray-900">${card.title}</h3>
+                    <p class="text-gray-500 text-sm leading-relaxed">${card.content}</p>
+                </div>
+            `).join('')}
+        </section>
+      `;
+    }
+
+    async function renderExperiments() {
+      window.location.hash = '#/experiments';
+      const content = document.getElementById('main-content');
+      content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>'; // Loading
+
+      try {
+        const items = await loadExperiments();
+        items.sort((a, b) => {
+          const ta = a?.created ? new Date(a.created).getTime() : 0;
+          const tb = b?.created ? new Date(b.created).getTime() : 0;
+          return tb - ta;
+        });
+
+        let html = `
+                <div class="mb-10">
+                    <h1 class="text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '所有实验' : 'All Experiments'}</h1>
+                </div>
+                <div class="space-y-6">
+                `;
+
+        if (items.length === 0) {
+          html += `
+                        <div class="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
+                             <p class="text-gray-500">${currentLang === 'zh' ? '暂无实验' : 'No experiments found.'}</p>
+                        </div>
+                     `;
+        } else {
+          items.forEach(item => {
+            const statusColors = {
+              'built': 'bg-green-100 text-green-800',
+              'observe': 'bg-blue-100 text-blue-800',
+              'iterate': 'bg-yellow-100 text-yellow-800',
+              'graduate': 'bg-purple-100 text-purple-800'
+            };
+            const statusClass = statusColors[item.status] || 'bg-gray-100 text-gray-800';
+            const displayId = formatExperimentDisplayId(item);
+
+            html += `
+                        <a href="#/${item.id}" class="block group bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex-1 min-w-0">
+                                    <div class="mb-2">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusClass}">
+                                            ${item.status}
+                                        </span>
+                                    </div>
+
+                                    <h2 class="text-lg font-bold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors truncate">
+                                        ${item.name}
+                                    </h2>
+                                    <p class="text-sm text-gray-500 line-clamp-2 leading-relaxed">${item.description || ''}</p>
+                                </div>
+                                
+                                <div class="shrink-0 flex flex-col items-center gap-1">
+                                     ${displayId ? `<div class="text-lg font-black tracking-tight text-gray-400 select-none group-hover:text-gray-500 transition-colors">${displayId}</div>` : ''}
+                                     ${item.logo ?
+                `<img src="${item.logo}" alt="${item.name}" class="h-12 w-12 rounded-lg object-contain bg-gray-50 border border-gray-100">` :
+                `<div class="h-12 w-12 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl select-none">${item.icon || '🧪'}</div>`
+              }
+                                </div>
+                            </div>
+                        </a>
+                        `;
+          });
+        }
+
+        html += '</div>';
+        content.innerHTML = html;
+
+      } catch (err) {
+        console.error(err);
+        content.innerHTML = `<div class="text-red-500">Error loading experiments: ${err.message}</div>`;
+      }
+    }
+
+    async function renderDetail(id) {
+      window.location.hash = '#/' + id;
+      const content = document.getElementById('main-content');
+      content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
+
+      try {
+        const items = await loadExperiments();
+        const item = items.find(x => x && x.id === id);
+
+        if (!item) {
+          content.innerHTML = `
+            <div class="max-w-3xl mx-auto">
+              <a href="#/experiments" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors font-medium">
+                <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                ${currentLang === 'zh' ? '返回列表' : 'Back to Experiments'}
+              </a>
+              <div class="text-red-500">${currentLang === 'zh' ? '未找到该实验' : 'Experiment not found.'}</div>
+            </div>
+          `;
+          return;
+        }
+
+        const statusColors = {
+          'built': 'bg-green-100 text-green-800',
+          'observe': 'bg-blue-100 text-blue-800',
+          'iterate': 'bg-yellow-100 text-yellow-800',
+          'graduate': 'bg-purple-100 text-purple-800'
+        };
+        const statusClass = statusColors[item.status] || 'bg-gray-100 text-gray-800';
+
+        content.innerHTML = `
+                <div class="max-w-3xl mx-auto">
+                    <div class="mb-8">
+                        <a href="#/experiments" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors font-medium">
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            ${currentLang === 'zh' ? '返回列表' : 'Back to Experiments'}
+                        </a>
+                        
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                            <h1 class="text-4xl font-bold text-gray-900 tracking-tight">${item.name}</h1>
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusClass}">
+                                ${item.status}
+                            </span>
+                        </div>
+                        
+                        <div class="flex items-center gap-4 text-sm text-gray-500 border-b border-gray-200 pb-8">
+                             <div class="flex items-center gap-1.5">
+                                <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">ID: ${item.id}</span>
+                            </div>
+                            <span class="text-gray-300">•</span>
+                            <div>Created <span class="text-gray-700">${item.created ? new Date(item.created).toLocaleDateString() : ''}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-12">
+                        <section>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-3">${currentLang === 'zh' ? '关于' : 'About'}</h3>
+                            <p class="text-gray-600 leading-relaxed text-lg">${item.description || ''}</p>
+                        </section>
+
+                        <section class="flex flex-wrap gap-4">
+                            ${item.url ? `
+                            <a href="${item.url}" target="_blank" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                ${currentLang === 'zh' ? '启动实验 🚀' : 'Launch Experiment 🚀'}
+                            </a>` : ''}
+                            
+                            ${item.github_url ? `
+                            <a href="${item.github_url}" target="_blank" class="inline-flex items-center px-6 py-3 border border-gray-300 shadow-sm text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                <svg class="mr-2 h-5 w-5 text-gray-500" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/></svg>
+                                ${currentLang === 'zh' ? '查看源码' : 'View Source'}
+                            </a>` : ''}
+                        </section>
+
+                        ${item.stats ? `
+                        <section class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                            <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">${currentLang === 'zh' ? '实时数据' : 'Live Statistics'}</h3>
+                            <pre class="font-mono text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto">${JSON.stringify(item.stats, null, 2)}</pre>
+                        </section>` : ''}
+                    </div>
+                </div>
+                `;
+      } catch (err) {
+        console.error(err);
+        content.innerHTML = `<div class="text-red-500">Error loading experiment: ${err.message}</div>`;
+      }
+    }
+  </script>
+</body>
+
+</html>
