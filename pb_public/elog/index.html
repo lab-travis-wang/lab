@@ -180,30 +180,30 @@
         logs.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         let html = `
-                <div class="mb-10">
-                    <h1 class="text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '实验日志' : 'Experiment Logs'}</h1>
-                    <p class="mt-2 text-gray-500">${currentLang === 'zh' ? '记录实验进展与思考' : 'Tracking progress and thoughts'}</p>
-                </div>
-                <div class="space-y-4">
-                `;
+            <div class="mb-6">
+              <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '实验日志' : 'Experiment Logs'}</h1>
+              <p class="mt-1 text-sm text-gray-500">${currentLang === 'zh' ? '记录实验进展与思考' : 'Tracking progress and thoughts'}</p>
+            </div>
+            <div class="space-y-3">
+            `;
 
         logs.forEach(log => {
-          html += `
-                    <a href="#/${log.filename}" class="block group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200 hover:border-blue-300">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h2 class="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">${log.title}</h2>
-                                <div class="flex items-center gap-3 text-sm text-gray-500">
-                                    <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">${log.date}</span>
-                                    ${log.tags.map(tag => `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs">#${tag}</span>`).join('')}
-                                </div>
-                            </div>
-                            <div class="text-gray-400 group-hover:translate-x-1 transition-transform">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                            </div>
-                        </div>
-                    </a>
-                    `;
+            html += `
+                <a href="#/${log.filename}" class="block group bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
+                  <div class="flex flex-row items-start sm:items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <h2 class="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">${log.title}</h2>
+                      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
+                        <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">${log.date}</span>
+                        ${log.tags.map(tag => `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs">#${tag}</span>`).join('')}
+                      </div>
+                    </div>
+                    <div class="text-gray-400 group-hover:translate-x-1 transition-transform shrink-0 ml-auto">
+                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                  </div>
+                </a>
+                `;
         });
 
         html += '</div>';

@@ -1,13 +1,22 @@
 [
   {
+    "filename": "2025-12-31-navbar-dropdown-and-compact-log-list.md",
+    "title": "UI Tweaks: Navbar dropdown & Compact Log List",
+    "date": "2025-12-31",
+    "tags": [
+      "ui",
+      "navbar",
+      "elog"
+    ]
+  },
+  {
     "filename": "2025-12-28-ui-refactor.md",
     "title": "UI Refactoring: Navigation & Experiment List",
     "date": "2025-12-28",
     "tags": [
       "ui",
       "refactor",
-      "navbar",
-      "frontend"
+      "navbar"
     ]
   },
   {
