@@ -11,8 +11,8 @@ services:
       dockerfile: Dockerfile
       args:
         PB_VERSION: ${PB_VERSION:-0.35.0}
-    container_name: lab-pocketbase
-    restart: unless-stopped
+    
+    restart: always
     # ports:
     #   - "8090:8090" # Exposed via Traefik, no need to expose here
     volumes:

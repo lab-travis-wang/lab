@@ -23,14 +23,10 @@ RUN set -eux; \
 
 FROM alpine:3.20
 
-RUN apk add --no-cache ca-certificates \
-  && addgroup -S pb \
-  && adduser -S -G pb pb
+RUN apk add --no-cache ca-certificates
 
 WORKDIR /pb
 COPY --from=downloader /out/pocketbase /usr/local/bin/pocketbase
-
-USER pb
 EXPOSE 8090
 
 CMD ["pocketbase", "serve", "--http=0.0.0.0:8090"]
