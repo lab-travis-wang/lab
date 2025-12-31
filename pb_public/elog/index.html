@@ -168,8 +168,34 @@
       }
     }
 
+    function getExperimentIdFilter() {
+      const url = new URL(window.location.href);
+      return (
+        url.searchParams.get('experiment_id') ||
+        url.searchParams.get('experimentId') ||
+        url.searchParams.get('eid') ||
+        ''
+      );
+    }
+
+    function setExperimentIdFilter(value) {
+      const v = String(value || '').trim();
+      const url = new URL(window.location.href);
+
+      if (v) {
+        url.searchParams.set('experiment_id', v);
+        url.searchParams.delete('experimentId');
+        url.searchParams.delete('eid');
+      } else {
+        url.searchParams.delete('experiment_id');
+        url.searchParams.delete('experimentId');
+        url.searchParams.delete('eid');
+      }
+
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+
     async function renderLogList() {
-      window.location.hash = '#/';
       const content = document.getElementById('main-content');
       content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
 
@@ -179,15 +205,58 @@
         // Sort by date desc
         logs.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+        const experimentIdFilter = getExperimentIdFilter().trim();
+        const allExperimentIds = Array.from(
+          new Set(
+            logs
+              .map((log) => String(log?.experiment_id || '').trim())
+              .filter(Boolean)
+          )
+        ).sort((a, b) => a.localeCompare(b));
+
+        const filteredLogs = experimentIdFilter
+          ? logs.filter((log) => String(log?.experiment_id || '').trim() === experimentIdFilter)
+          : logs;
+
         let html = `
             <div class="mb-6">
               <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '实验日志' : 'Experiment Logs'}</h1>
               <p class="mt-1 text-sm text-gray-500">${currentLang === 'zh' ? '记录实验进展与思考' : 'Tracking progress and thoughts'}</p>
             </div>
+
+            <div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
+              <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex-1 min-w-0">
+                  <label class="block text-sm font-medium text-gray-700 mb-1" for="experiment-id-filter">
+                    ${currentLang === 'zh' ? '按实验 ID 过滤' : 'Filter by Experiment ID'}
+                  </label>
+                  <select
+                    id="experiment-id-filter"
+                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
+                  >
+                    <option value="">${currentLang === 'zh' ? '全部实验' : 'All experiments'}</option>
+                    ${allExperimentIds
+                      .map((id) => {
+                        const selected = id === experimentIdFilter ? ' selected' : '';
+                        return `<option value="${escapeHtml(id)}"${selected}>${escapeHtml(id)}</option>`;
+                      })
+                      .join('')
+                    }
+                  </select>
+                </div>
+              </div>
+              <div class="mt-2 text-xs text-gray-500">
+                ${currentLang === 'zh'
+            ? `共 ${filteredLogs.length} 条（总计 ${logs.length} 条）`
+            : `${filteredLogs.length} shown (of ${logs.length})`
+          }
+              </div>
+            </div>
+
             <div class="space-y-3">
             `;
 
-        logs.forEach(log => {
+        filteredLogs.forEach(log => {
             html += `
                 <a href="#/${log.filename}" class="block group bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
                   <div class="flex flex-row items-start sm:items-center justify-between gap-3">
@@ -195,6 +264,10 @@
                       <h2 class="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">${log.title}</h2>
                       <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
                         <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">${log.date}</span>
+                        ${String(log?.experiment_id || '').trim()
+              ? `<span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">${escapeHtml(String(log.experiment_id))}</span>`
+              : ''
+            }
                         ${log.tags.map(tag => `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs">#${tag}</span>`).join('')}
                       </div>
                     </div>
@@ -208,6 +281,12 @@
 
         html += '</div>';
         content.innerHTML = html;
+
+        const select = document.getElementById('experiment-id-filter');
+        select?.addEventListener('change', () => {
+          setExperimentIdFilter(String(select?.value || '').trim());
+          renderLogList();
+        });
 
       } catch (err) {
         console.error(err);
@@ -251,26 +330,35 @@
         });
         if (currentColumn) board.push(currentColumn);
 
-        // Render Kanban
-        let html = `
+           // Render Kanban (collapsible columns)
+           let html = `
             <div class="mb-8">
-                 <h1 class="text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '项目看板' : 'Project Kanban'}</h1>
+              <h1 class="text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '项目看板' : 'Project Kanban'}</h1>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto pb-8">
             `;
 
-        board.forEach(col => {
+        board.forEach((col, idx) => {
+          const safeTitle = escapeHtml(col.title);
           html += `
-                <div class="bg-gray-100 rounded-xl p-4 flex flex-col h-full min-h-[300px]">
-                    <h3 class="font-bold text-gray-700 mb-4 px-2 flex items-center justify-between">
-                        ${col.title}
-                        <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">${col.tasks.length}</span>
-                    </h3>
-                    <div class="space-y-3 flex-1">
+                <details class="bg-gray-100 rounded-xl border border-gray-200 p-4 flex flex-col h-full" data-task-column data-col-index="${idx}">
+                    <summary class="list-none cursor-pointer select-none">
+                        <div class="flex items-center justify-between gap-3">
+                          <h3 class="font-bold text-gray-700">${safeTitle}</h3>
+                          <div class="flex items-center gap-3">
+                            <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">${col.tasks.length}</span>
+                            <span class="text-gray-400" aria-hidden="true">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/></svg>
+                            </span>
+                          </div>
+                        </div>
+                        <div class="mt-3 border-t border-gray-200"></div>
+                    </summary>
+                    <div class="space-y-3 flex-1 pt-4">
                 `;
 
           if (col.tasks.length === 0) {
-            html += `<div class="text-gray-400 text-sm text-center py-8 italic">${currentLang === 'zh' ? '暂无任务' : 'No tasks'}</div>`;
+            html += `<div class="text-gray-400 text-sm text-center py-6 italic">${currentLang === 'zh' ? '暂无任务' : 'No tasks'}</div>`;
           } else {
             col.tasks.forEach(task => {
               html += `
@@ -282,21 +370,28 @@
                   : '<div class="w-4 h-4 border-2 border-current rounded-sm"></div>'
                 }
                                 </div>
-                                <span class="text-sm ${task.isDone ? 'text-gray-400 line-through' : 'text-gray-800'}">${task.text}</span>
+                                <span class="text-sm ${task.isDone ? 'text-gray-400 line-through' : 'text-gray-800'}">${escapeHtml(task.text)}</span>
                             </div>
                         </div>
                         `;
             });
           }
 
-          html += `
-                    </div>
+            html += `
                 </div>
-                `;
+              </details>
+              `;
         });
 
         html += '</div>';
         content.innerHTML = html;
+
+        // Default behavior: collapsed on mobile, expanded on md+
+        const isDesktop = window.matchMedia && window.matchMedia('(min-width: 768px)').matches;
+        const cols = content.querySelectorAll('[data-task-column]');
+        cols.forEach((el) => {
+          el.open = !!isDesktop;
+        });
 
       } catch (err) {
         console.error(err);

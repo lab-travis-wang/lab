@@ -1,6 +1,18 @@
 [
   {
+    "filename": "2025-12-31-init-writing-training-system.md",
+    "experiment_id": "exp-26W01-001",
+    "title": "开始 #001: 写作训练系统",
+    "date": "2025-12-31",
+    "tags": [
+      "init",
+      "writing",
+      "001"
+    ]
+  },
+  {
     "filename": "2025-12-31-navbar-dropdown-and-compact-log-list.md",
+    "experiment_id": "exp-25W52-000",
     "title": "UI Tweaks: Navbar dropdown & Compact Log List",
     "date": "2025-12-31",
     "tags": [
@@ -11,6 +23,7 @@
   },
   {
     "filename": "2025-12-28-ui-refactor.md",
+    "experiment_id": "exp-25W52-000",
     "title": "UI Refactoring: Navigation & Experiment List",
     "date": "2025-12-28",
     "tags": [
@@ -21,6 +34,7 @@
   },
   {
     "filename": "2025-12-28-fix-markdown-rendering.md",
+    "experiment_id": "exp-25W52-000",
     "title": "Fix Markdown rendering in Experiment Logs",
     "date": "2025-12-28",
     "tags": [
@@ -30,6 +44,7 @@
   },
   {
     "filename": "2025-12-27-add-docker-compose.md",
+    "experiment_id": "exp-25W52-000",
     "title": "Add docker-compose for PocketBase",
     "date": "2025-12-27",
     "tags": [
@@ -39,6 +54,7 @@
   },
   {
     "filename": "2025-12-26-init.md",
+    "experiment_id": "exp-25W52-000",
     "title": "Log System Initialization",
     "date": "2025-12-26",
     "tags": [
