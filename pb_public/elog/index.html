@@ -4,39 +4,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Experiment logs - Lab</title>
+  <title>Logs - Lab</title>
   <!-- Load local Tailwind from static assets -->
   <script src="/static/js/tailwindcss_3.4.17.js"></script>
   <!-- Load marked for markdown rendering -->
   <script src="/static/js/marked_12.0.2.min.js"></script>
+  <link rel="stylesheet" href="/static/css/main.css">
   <script src="/static/js/navbar.js"></script>
+  <script src="/static/js/footer.js"></script>
 </head>
 
-<body class="bg-gray-50 text-gray-900 antialiased selection:bg-black selection:text-white">
+<body class="selection:bg-black selection:text-white">
   <div id="app" class="min-h-screen flex flex-col">
     <!-- Header -->
-    <!-- Header -->
-    <header id="app-header" class="bg-white border-b border-gray-200 sticky top-0 z-50"></header>
+    <header id="app-header"></header>
 
-    <main class="py-12 flex-1">
-      <div class="max-w-4xl mx-auto px-4" id="main-content">
+    <main class="flex-1 animate-fade-in">
+      <div id="main-content">
         <!-- Content will be injected here -->
-        <div class="flex justify-center">
+        <div class="flex justify-center py-24">
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
       </div>
     </main>
 
-    <footer class="mt-12 py-8 text-center text-gray-400 text-sm border-t border-gray-200">
-      <div class="max-w-4xl mx-auto px-4">
-        <p>&copy; <span id="year"></span> Travis Wang. Proudly build with ❤️ and AI.</p>
-      </div>
-    </footer>
+    <footer id="app-footer"></footer>
   </div>
 
   <script>
     let currentLang = 'en';
-
     const CACHE_BUST = String(Date.now());
 
     function noCacheUrl(url) {
@@ -44,91 +40,49 @@
       return `${url}${sep}v=${encodeURIComponent(CACHE_BUST)}`;
     }
 
-    // Initialize
-    document.getElementById('year').textContent = new Date().getFullYear();
-    window.addEventListener('load', () => {
-      // Init handled in route
-    });
-
-    // Language handling delegated to NavBar
-    // updateNavText removed as NavBar handles it
-
-
-    // Router (Hashtag based for logs)
+    // Router
     window.addEventListener('hashchange', handleRoute);
-    window.addEventListener('load', () => {
-      // Check URL params for lang or use NavBar's
-      // NavBar handles lang initialization
+    window.addEventListener('load', handleRoute);
 
-      handleRoute();
-    });
-
-    // Listen for lang changes from NavBar
+    // Language handling
     window.addEventListener('lang-change', (e) => {
       currentLang = e.detail.lang;
-
-      // Re-render
       handleRoute();
     });
 
-    // Configure markdown renderer once.
+    // Markdown Renderer setup
     if (window.marked && typeof window.marked.setOptions === 'function' && typeof window.marked.Renderer === 'function') {
       const renderer = new window.marked.Renderer();
 
       renderer.heading = (text, level) => {
-        const base = 'font-bold tracking-tight text-gray-900';
-        const spacing = 'mt-5 mb-2';
-        if (level === 1) return `<h1 class="text-3xl ${base} mt-0 mb-4">${text}</h1>`;
-        if (level === 2) return `<h2 class="text-xl ${base} ${spacing}">${text}</h2>`;
-        if (level === 3) return `<h3 class="text-lg ${base} ${spacing}">${text}</h3>`;
-        if (level === 4) return `<h4 class="text-base ${base} ${spacing}">${text}</h4>`;
-        return `<h${level} class="text-sm ${base} ${spacing}">${text}</h${level}>`;
+        const sizes = {
+          1: 'text-4xl md:text-5xl font-black tracking-tighter mb-8',
+          2: 'text-2xl md:text-3xl font-black mb-6 mt-12',
+          3: 'text-xl font-black mb-4 mt-10',
+          4: 'text-lg font-black mb-4 mt-8'
+        };
+        const sizeClass = sizes[level] || 'text-base font-black mb-4 mt-6';
+        return `<h${level} class="${sizeClass} text-gray-900">${text}</h${level}>`;
       };
 
-      renderer.paragraph = (text) => `<p class="text-gray-700 leading-6 my-3">${text}</p>`;
-
-      renderer.strong = (text) => `<strong class="font-semibold text-gray-900">${text}</strong>`;
-      renderer.em = (text) => `<em class="italic">${text}</em>`;
-
-      renderer.codespan = (code) => `<code class="font-mono text-sm bg-gray-100 text-gray-900 px-1.5 py-0.5 rounded">${code}</code>`;
+      renderer.paragraph = (text) => `<p class="text-xl text-gray-600 leading-relaxed font-medium mb-6 last:mb-0">${text}</p>`;
+      renderer.strong = (text) => `<strong class="font-black text-gray-900">${text}</strong>`;
+      renderer.codespan = (code) => `<code class="font-black text-sm bg-gray-100 px-2 py-0.5 rounded text-accent tracking-tight">${code}</code>`;
       renderer.code = (code, lang) => {
         const language = lang ? `language-${escapeHtml(lang)}` : '';
-        return `\n<pre class="my-4 rounded-lg bg-gray-900 text-gray-100 px-3 py-2.5 overflow-x-auto"><code class="font-mono text-sm ${language}">${escapeHtml(code)}</code></pre>\n`;
+        return `\n<div class="my-8 rounded-[2rem] bg-gray-900 text-gray-100 p-8 overflow-x-auto shadow-2xl relative group">
+          ${lang ? `<span class="absolute top-4 right-6 text-[10px] font-black uppercase text-gray-500 tracking-widest opacity-40">${lang}</span>` : ''}
+          <pre><code class="font-mono text-sm ${language}">${escapeHtml(code)}</code></pre>
+        </div>\n`;
       };
-
-      renderer.blockquote = (quote) => `<blockquote class="my-4 border-l-4 border-gray-200 pl-3 text-gray-600 italic">${quote}</blockquote>`;
-      renderer.hr = () => '<hr class="my-6 border-gray-200" />';
-
+      renderer.blockquote = (quote) => `<blockquote class="my-10 border-l-8 border-gray-100 pl-8 text-2xl text-gray-400 italic font-medium leading-relaxed">${quote}</blockquote>`;
       renderer.list = (body, ordered, start) => {
         const tag = ordered ? 'ol' : 'ul';
         const style = ordered ? 'list-decimal' : 'list-disc';
-        const startAttr = ordered && start && start !== 1 ? ` start="${start}"` : '';
-        return `<${tag}${startAttr} class="my-3 pl-5 ${style} text-gray-700">${body}</${tag}>`;
+        return `<${tag} class="my-8 pl-8 ${style} space-y-4 text-xl text-gray-600 font-medium">${body}</${tag}>`;
       };
-      renderer.listitem = (text) => `<li class="my-0.5">${text}</li>`;
-
-      renderer.link = (href, title, text) => {
-        const safeHref = href ? escapeHtml(href) : '';
-        const safeTitle = title ? ` title="${escapeHtml(title)}"` : '';
-        return `<a class="text-blue-600 hover:text-blue-800 underline underline-offset-2" href="${safeHref}"${safeTitle}>${text}</a>`;
-      };
-
-      renderer.image = (href, title, text) => {
-        const safeHref = href ? escapeHtml(href) : '';
-        const safeTitle = title ? ` title="${escapeHtml(title)}"` : '';
-        const alt = text ? escapeHtml(text) : '';
-        return `<img class="my-4 max-w-full rounded-lg border border-gray-200" src="${safeHref}" alt="${alt}"${safeTitle} />`;
-      };
-
-      renderer.table = (header, body) => {
-        return `\n<div class="my-4 overflow-x-auto"><table class="w-full text-sm border border-gray-200 rounded-lg overflow-hidden"><thead class="bg-gray-50">${header}</thead><tbody>${body}</tbody></table></div>\n`;
-      };
-      renderer.tablerow = (content) => `<tr class="border-t border-gray-200">${content}</tr>`;
-      renderer.tablecell = (content, flags) => {
-        const alignClass = flags?.align ? ` text-${flags.align}` : '';
-        if (flags?.header) return `<th class="px-3 py-2 font-semibold text-gray-900 border-b border-gray-200${alignClass}">${content}</th>`;
-        return `<td class="px-3 py-2 text-gray-700 border-b border-gray-200${alignClass}">${content}</td>`;
-      };
+      renderer.link = (href, title, text) => `<a class="text-gray-900 font-black underline decoration-4 decoration-accent/20 hover:decoration-accent transition-all underline-offset-4" href="${escapeHtml(href)}"${title ? ` title="${escapeHtml(title)}"` : ''}>${text}</a>`;
+      renderer.image = (href, title, text) => `<img class="my-10 max-w-full rounded-[2.5rem] border-8 border-gray-50 bg-gray-50 shadow-sm" src="${escapeHtml(href)}" alt="${escapeHtml(text)}" ${title ? ` title="${escapeHtml(title)}"` : ''}/>`;
 
       window.marked.setOptions({
         gfm: true,
@@ -140,29 +94,14 @@
     }
 
     async function handleRoute() {
-      const hash = window.location.hash;
-
-      // Initialize NavBar first
-      if (!hash || hash === '#/') {
-        NavBar.init('logs');
-      } else if (hash === '#/tasks') {
-        NavBar.init('tasks');
-      } else if (hash.startsWith('#/')) {
-        NavBar.init('logs');
-      } else {
-        NavBar.init('logs');
-      }
-
-      // Sync language BEFORE rendering
+      const hash = window.location.hash || '#/';
+      NavBar.init(hash === '#/tasks' ? 'tasks' : 'logs');
       currentLang = NavBar.getLang();
 
-      if (!hash || hash === '#/') {
-        renderLogList();
-      } else if (hash === '#/tasks') {
+      if (hash === '#/tasks') {
         renderTasks();
-      } else if (hash.startsWith('#/')) {
-        const filename = hash.substring(2);
-        renderLogDetail(filename);
+      } else if (hash.startsWith('#/') && hash.length > 2) {
+        renderLogDetail(hash.substring(2));
       } else {
         renderLogList();
       }
@@ -170,141 +109,95 @@
 
     function getExperimentIdFilter() {
       const url = new URL(window.location.href);
-      return (
-        url.searchParams.get('experiment_id') ||
-        url.searchParams.get('experimentId') ||
-        url.searchParams.get('eid') ||
-        ''
-      );
+      return url.searchParams.get('experiment_id') || url.searchParams.get('experimentId') || url.searchParams.get('eid') || '';
     }
 
     function setExperimentIdFilter(value) {
-      const v = String(value || '').trim();
       const url = new URL(window.location.href);
-
-      if (v) {
-        url.searchParams.set('experiment_id', v);
-        url.searchParams.delete('experimentId');
-        url.searchParams.delete('eid');
-      } else {
-        url.searchParams.delete('experiment_id');
-        url.searchParams.delete('experimentId');
-        url.searchParams.delete('eid');
-      }
-
+      if (value) url.searchParams.set('experiment_id', value);
+      else url.searchParams.delete('experiment_id');
+      url.searchParams.delete('experimentId'); url.searchParams.delete('eid');
       window.history.replaceState(null, '', url.pathname + url.search + url.hash);
     }
 
     async function renderLogList() {
       const content = document.getElementById('main-content');
-      content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
+      content.innerHTML = '<div class="flex justify-center py-24"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
 
       try {
-        const response = await fetch(noCacheUrl('/elog/manifest.json'), { cache: 'no-store' });
-        const logs = await response.json();
-        // Sort by date desc
+        const [manifestRes, tasksRes] = await Promise.all([
+          fetch(noCacheUrl('/elog/manifest.json'), { cache: 'no-store' }),
+          fetch(noCacheUrl('/elog/tasks.md'), { cache: 'no-store' })
+        ]);
+
+        const logs = await manifestRes.json();
         logs.sort((a, b) => new Date(b.date) - new Date(a.date));
 
         const experimentIdFilter = getExperimentIdFilter().trim();
-        const allExperimentIds = Array.from(
-          new Set(
-            logs
-              .map((log) => String(log?.experiment_id || '').trim())
-              .filter(Boolean)
-          )
-        ).sort((a, b) => a.localeCompare(b));
-
-        const filteredLogs = experimentIdFilter
-          ? logs.filter((log) => String(log?.experiment_id || '').trim() === experimentIdFilter)
-          : logs;
+        const allExperimentIds = Array.from(new Set(logs.map(log => String(log?.experiment_id || '').trim()).filter(Boolean))).sort();
+        const filteredLogs = experimentIdFilter ? logs.filter(log => String(log?.experiment_id || '').trim() === experimentIdFilter) : logs;
 
         let html = `
-            <div class="mb-6">
-              <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '实验日志' : 'Experiment Logs'}</h1>
-              <p class="mt-1 text-sm text-gray-500">${currentLang === 'zh' ? '记录实验进展与思考' : 'Tracking progress and thoughts'}</p>
-            </div>
-
-            <div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
-              <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div class="flex-1 min-w-0">
-                  <label class="block text-sm font-medium text-gray-700 mb-1" for="experiment-id-filter">
-                    ${currentLang === 'zh' ? '按实验 ID 过滤' : 'Filter by Experiment ID'}
-                  </label>
-                  <select
-                    id="experiment-id-filter"
-                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10"
-                  >
-                    <option value="">${currentLang === 'zh' ? '全部实验' : 'All experiments'}</option>
-                    ${allExperimentIds
-                      .map((id) => {
-                        const selected = id === experimentIdFilter ? ' selected' : '';
-                        return `<option value="${escapeHtml(id)}"${selected}>${escapeHtml(id)}</option>`;
-                      })
-                      .join('')
-                    }
+          <div class="max-w-6xl mx-auto px-6 py-16">
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
+              <div>
+                <h1 class="text-5xl md:text-6xl font-black tracking-tighter text-gray-900 mb-4">${currentLang === 'zh' ? '实验日志' : 'Logs'}</h1>
+                <p class="text-xl text-gray-500 font-medium">${currentLang === 'zh' ? '记录实验进展与深度思考' : 'Tracking progress and deep thoughts'}</p>
+              </div>
+              <div class="shrink-0 w-full md:w-64">
+                <label class="block text-xs font-black text-gray-400 uppercase tracking-widest mb-3" for="experiment-id-filter">${currentLang === 'zh' ? '实验筛选' : 'Filter by Exp'}</label>
+                <div class="relative group">
+                  <select id="experiment-id-filter" class="w-full appearance-none glass rounded-xl px-4 py-3 text-sm font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-black cursor-pointer">
+                    <option value="">${currentLang === 'zh' ? '全部实验' : 'All Experiments'}</option>
+                    ${allExperimentIds.map(id => `<option value="${escapeHtml(id)}"${id === experimentIdFilter ? ' selected' : ''}>${escapeHtml(id)}</option>`).join('')}
                   </select>
+                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400 group-hover:text-black transition-colors">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                  </div>
                 </div>
               </div>
-              <div class="mt-2 text-xs text-gray-500">
-                ${currentLang === 'zh'
-            ? `共 ${filteredLogs.length} 条（总计 ${logs.length} 条）`
-            : `${filteredLogs.length} shown (of ${logs.length})`
-          }
-              </div>
             </div>
-
-            <div class="space-y-3">
-            `;
-
-        filteredLogs.forEach(log => {
-            html += `
-                <a href="#/${log.filename}" class="block group bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
-                  <div class="flex flex-row items-start sm:items-center justify-between gap-3">
+            <div class="grid grid-cols-1 gap-4">
+              ${filteredLogs.map(log => `
+                <a href="#/${log.filename}" class="bold-card group p-6 md:p-8 rounded-[2rem]">
+                  <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div class="min-w-0">
-                      <h2 class="text-lg sm:text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-1">${log.title}</h2>
-                      <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500">
-                        <span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">${log.date}</span>
-                        ${String(log?.experiment_id || '').trim()
-              ? `<span class="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-700">${escapeHtml(String(log.experiment_id))}</span>`
-              : ''
-            }
-                        ${log.tags.map(tag => `<span class="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs">#${tag}</span>`).join('')}
+                      <div class="flex flex-wrap items-center gap-3 mb-4">
+                        <span class="text-xs font-black text-accent uppercase tracking-widest">${log.date}</span>
+                        ${String(log?.experiment_id || '').trim() ? `<span class="px-2 py-0.5 border border-gray-200 rounded text-[10px] font-black text-gray-400 uppercase tracking-tighter hover:border-black hover:text-black transition-colors">${escapeHtml(log.experiment_id)}</span>` : ''}
+                      </div>
+                      <h2 class="text-2xl md:text-3xl font-black text-gray-900 group-hover:text-accent transition-colors mb-4">${log.title}</h2>
+                      <div class="flex flex-wrap gap-2">
+                        ${log.tags.map(tag => `<span class="px-3 py-1 bg-gray-50 text-gray-500 rounded-full text-[10px] font-bold uppercase tracking-widest border border-gray-100">#${tag}</span>`).join('')}
                       </div>
                     </div>
-                    <div class="text-gray-400 group-hover:translate-x-1 transition-transform shrink-0 ml-auto">
-                      <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-black group-hover:text-white transition-all transform group-hover:translate-x-1 shrink-0 ml-auto md:ml-0">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </div>
                   </div>
                 </a>
-                `;
-        });
-
-        html += '</div>';
+              `).join('')}
+            </div>
+          </div>`;
         content.innerHTML = html;
-
         const select = document.getElementById('experiment-id-filter');
         select?.addEventListener('change', () => {
-          setExperimentIdFilter(String(select?.value || '').trim());
+          setExperimentIdFilter(select.value);
           renderLogList();
         });
-
       } catch (err) {
         console.error(err);
-        content.innerHTML = `<div class="text-red-500">Error loading logs: ${err.message}</div>`;
+        content.innerHTML = `<div class="max-w-6xl mx-auto px-6 py-24 text-red-500 font-bold">Error loading logs: ${err.message}</div>`;
       }
     }
 
     async function renderTasks() {
-      window.location.hash = '#/tasks';
       const content = document.getElementById('main-content');
-      content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
+      content.innerHTML = '<div class="flex justify-center py-24"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
 
       try {
         const response = await fetch(noCacheUrl('/elog/tasks.md'), { cache: 'no-store' });
-        if (!response.ok) throw new Error('Tasks file not found');
         const markdown = await response.text();
-
-        // Simple Markdown Parser for Kanban
         const lines = markdown.split('\n');
         const board = [];
         let currentColumn = null;
@@ -313,142 +206,95 @@
           const trimmed = line.trim();
           if (trimmed.startsWith('## ')) {
             if (currentColumn) board.push(currentColumn);
-            currentColumn = {
-              title: trimmed.substring(3).trim(),
-              tasks: []
-            };
+            currentColumn = { title: trimmed.substring(3).trim(), tasks: [] };
           } else if (trimmed.startsWith('- [ ] ') || trimmed.startsWith('- [x] ')) {
-            if (currentColumn) {
-              const isDone = trimmed.startsWith('- [x] ');
-              const text = trimmed.substring(6).trim();
-              currentColumn.tasks.push({
-                text,
-                isDone
-              });
-            }
+            if (currentColumn) currentColumn.tasks.push({ text: trimmed.substring(6).trim(), isDone: trimmed.startsWith('- [x] ') });
           }
         });
         if (currentColumn) board.push(currentColumn);
 
-           // Render Kanban (collapsible columns)
-           let html = `
-            <div class="mb-8">
-              <h1 class="text-3xl font-bold tracking-tight text-gray-900">${currentLang === 'zh' ? '项目看板' : 'Project Kanban'}</h1>
+        let html = `
+          <div class="max-w-6xl mx-auto px-6 py-16">
+            <div class="mb-16">
+              <h1 class="text-5xl font-black tracking-tighter text-gray-900 mb-4">${currentLang === 'zh' ? '项目看板' : 'Kanban'}</h1>
+              <p class="text-xl text-gray-500 font-medium">${currentLang === 'zh' ? '实时追踪正在构建的功能与实验' : 'Tracking real-time progress of experiments'}</p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-x-auto pb-8">
-            `;
-
-        board.forEach((col, idx) => {
-          const safeTitle = escapeHtml(col.title);
-          html += `
-                <details class="bg-gray-100 rounded-xl border border-gray-200 p-4 flex flex-col h-full" data-task-column data-col-index="${idx}">
-                    <summary class="list-none cursor-pointer select-none">
-                        <div class="flex items-center justify-between gap-3">
-                          <h3 class="font-bold text-gray-700">${safeTitle}</h3>
-                          <div class="flex items-center gap-3">
-                            <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">${col.tasks.length}</span>
-                            <span class="text-gray-400" aria-hidden="true">
-                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 9l6 6 6-6"/></svg>
-                            </span>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+              ${board.map((col, idx) => `
+                <details class="group flex flex-col gap-6 select-none" ${window.innerWidth > 768 ? 'open' : ''}>
+                  <summary class="list-none cursor-pointer flex items-center justify-between pb-6 border-b-4 border-black group-open:mb-6 transition-all">
+                    <div class="flex items-center gap-3">
+                      <h3 class="text-2xl font-black uppercase tracking-tighter">${escapeHtml(col.title)}</h3>
+                      <span class="px-3 py-1 bg-black text-white text-[10px] font-black rounded-full">${col.tasks.length}</span>
+                    </div>
+                    <div class="text-gray-300 group-open:rotate-180 transition-transform duration-300">
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7"/></svg>
+                    </div>
+                  </summary>
+                  <div class="space-y-4 pb-8">
+                    ${col.tasks.length === 0 ? `<div class="p-8 border-2 border-dashed border-gray-200 rounded-[2rem] text-center text-gray-300 font-bold">${currentLang === 'zh' ? '空空如也' : 'EMPTY'}</div>` :
+            col.tasks.map(task => `
+                        <div class="bold-card p-6 rounded-[1.5rem] group/card ${task.isDone ? 'opacity-40' : ''}">
+                          <div class="flex items-start gap-4">
+                            <div class="mt-1 ${task.isDone ? 'text-green-500' : 'text-gray-200'} shrink-0">
+                              ${task.isDone ? '<span class="text-xl leading-none">✅</span>' : '<div class="w-5 h-5 border-4 border-current rounded-lg"></div>'}
+                            </div>
+                            <span class="font-bold text-gray-900 leading-tight ${task.isDone ? 'line-through' : ''}">${escapeHtml(task.text)}</span>
                           </div>
                         </div>
-                        <div class="mt-3 border-t border-gray-200"></div>
-                    </summary>
-                    <div class="space-y-3 flex-1 pt-4">
-                `;
-
-          if (col.tasks.length === 0) {
-            html += `<div class="text-gray-400 text-sm text-center py-6 italic">${currentLang === 'zh' ? '暂无任务' : 'No tasks'}</div>`;
-          } else {
-            col.tasks.forEach(task => {
-              html += `
-                        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow group">
-                            <div class="flex items-start gap-2">
-                                <div class="mt-1 ${task.isDone ? 'text-green-500' : 'text-gray-300'}">
-                                     ${task.isDone
-                  ? '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
-                  : '<div class="w-4 h-4 border-2 border-current rounded-sm"></div>'
-                }
-                                </div>
-                                <span class="text-sm ${task.isDone ? 'text-gray-400 line-through' : 'text-gray-800'}">${escapeHtml(task.text)}</span>
-                            </div>
-                        </div>
-                        `;
-            });
-          }
-
-            html += `
-                </div>
-              </details>
-              `;
-        });
-
-        html += '</div>';
+                      `).join('')}
+                  </div>
+                </details>
+              `).join('')}
+            </div>
+          </div>`;
         content.innerHTML = html;
-
-        // Default behavior: collapsed on mobile, expanded on md+
-        const isDesktop = window.matchMedia && window.matchMedia('(min-width: 768px)').matches;
-        const cols = content.querySelectorAll('[data-task-column]');
-        cols.forEach((el) => {
-          el.open = !!isDesktop;
-        });
-
       } catch (err) {
         console.error(err);
-        content.innerHTML = `<div class="text-red-500">Error loading tasks: ${err.message}</div>`;
+        content.innerHTML = `<div class="max-w-6xl mx-auto px-6 py-24 text-red-500 font-bold">Error loading tasks: ${err.message}</div>`;
       }
     }
 
     async function renderLogDetail(filename) {
-      window.location.hash = '#/' + filename;
       const content = document.getElementById('main-content');
-      content.innerHTML = '<div class="flex justify-center"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
+      content.innerHTML = '<div class="flex justify-center py-24"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
 
       try {
-        // Fetch manifest to get title
-        const manifestRes = await fetch(noCacheUrl('/elog/manifest.json'), { cache: 'no-store' });
+        const [manifestRes, contentRes] = await Promise.all([
+          fetch(noCacheUrl('/elog/manifest.json'), { cache: 'no-store' }),
+          fetch(noCacheUrl('/elog/' + filename), { cache: 'no-store' })
+        ]);
         const logs = await manifestRes.json();
         const meta = logs.find(l => l.filename === filename);
-
-        const response = await fetch(noCacheUrl('/elog/' + filename), { cache: 'no-store' });
-        if (!response.ok) throw new Error('Log not found');
-        const markdown = await response.text();
-
-        const renderedHtml = (window.marked && typeof window.marked.parse === 'function')
-          ? window.marked.parse(markdown)
-          : `<pre class="whitespace-pre-wrap">${escapeHtml(markdown)}</pre>`;
+        const markdown = await contentRes.text();
+        const renderedHtml = window.marked.parse(markdown);
 
         content.innerHTML = `
-                <div class="max-w-3xl mx-auto">
-                    <div>
-                        <a href="#/" class="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors font-medium">
-                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                            </svg>
-                            ${currentLang === 'zh' ? '返回日志列表' : 'Back to Logs'}
-                        </a>
-              </div>
-
-              <article class="max-w-none">
-                ${renderedHtml}
-              </article>
-                </div>
-                `;
-
+          <div class="max-w-4xl mx-auto px-6 py-16">
+            <a href="#/" class="inline-flex items-center text-sm font-bold text-gray-400 hover:text-black mb-12 transition-colors uppercase tracking-widest">
+              <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              ${currentLang === 'zh' ? '返回日志' : 'Back'}
+            </a>
+            ${meta ? `
+              <div class="mb-16 border-b border-gray-100 pb-16">
+                 <div class="flex items-center gap-4 mb-6">
+                    <span class="text-xs font-black text-accent uppercase tracking-widest">${meta.date}</span>
+                    <span class="px-2 py-0.5 border border-gray-200 rounded text-[10px] font-black text-gray-400 uppercase tracking-tighter">${escapeHtml(meta.experiment_id || 'GENERAL')}</span>
+                 </div>
+                 <h1 class="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-8">${meta.title}</h1>
+                 <div class="flex flex-wrap gap-2">
+                    ${meta.tags.map(tag => `<span class="px-4 py-2 bg-gray-50 text-gray-400 rounded-full text-xs font-black uppercase tracking-widest border border-gray-100">#${tag}</span>`).join('')}
+                 </div>
+              </div>` : ''}
+            <article class="prose-modern max-w-none">${renderedHtml}</article>
+          </div>`;
       } catch (err) {
         console.error(err);
-        content.innerHTML = `<div class="text-red-500">Error loading log: ${err.message}</div>`;
+        content.innerHTML = `<div class="max-w-4xl mx-auto px-6 py-24 text-red-500 font-bold">Error loading log: ${err.message}</div>`;
       }
     }
 
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#39;');
-    }
+    function escapeHtml(v) { return String(v).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;'); }
   </script>
 </body>
 
