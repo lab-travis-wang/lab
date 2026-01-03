@@ -107,7 +107,8 @@
       const res = await fetch('/experiments.json', {
         headers: {
           'Accept': 'application/json'
-        }
+        },
+        cache: 'no-store'
       });
 
       if (!res.ok) {
@@ -166,20 +167,25 @@
     });
 
     // Listen for lang changes from NavBar
+    let langChangeListenerAttached = false;
+
     window.addEventListener('lang-change', (e) => {
       currentLang = e.detail.lang;
 
-      // Re-render current view if possible, or go home
-      // For simplicity, just re-render home if on home, or experiments if on experiments
-      const hash = window.location.hash;
-      if (hash.startsWith('#/experiments')) {
-        renderExperiments();
-      } else if (hash.startsWith('#/')) {
-        const id = hash.substring(2);
-        if (id) renderDetail(id);
-        else renderHome();
-      } else {
-        renderHome();
+      // Only re-render if we haven't attached the listener yet (initial load)
+      // This prevents infinite loop: lang-change -> render -> NavBar.init -> lang-change
+      if (!langChangeListenerAttached) {
+        langChangeListenerAttached = true;
+        const hash = window.location.hash;
+        if (hash.startsWith('#/experiments')) {
+          renderExperiments();
+        } else if (hash.startsWith('#/')) {
+          const id = hash.substring(2);
+          if (id) renderDetail(id);
+          else renderHome();
+        } else {
+          renderHome();
+        }
       }
     });
 

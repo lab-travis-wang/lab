@@ -1,5 +1,8 @@
 # Fix Markdown rendering in Experiment Logs
 
+> created_at: 2025-12-28T12:00:00+08:00
+> related_tasks: ["elog-markdown"]
+
 Date: 2025-12-28
 
 ## Context

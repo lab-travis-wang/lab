@@ -1,5 +1,8 @@
 # UI Refactoring: Navigation & Experiment List
 
+> created_at: 2025-12-28T15:00:00+08:00
+> related_tasks: ["ui-refactor", "navbar"]
+
 为了提升移动端体验和整体视觉的精致度，今天对导航栏和实验列表进行了两项主要重构。
 
 ## 1. 紧凑型导航栏 (Compact Navbar)

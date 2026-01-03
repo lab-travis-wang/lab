@@ -1,9 +1,36 @@
 [
   {
+    "filename": "2026-01-03-task-log-refactor-plan.md",
+    "experiment_id": "exp-25W52-000",
+    "title": "任务与日志系统重构规划",
+    "date": "2026-01-03",
+    "created_at": "2026-01-03T16:30:00+08:00",
+    "related_tasks": ["task-log-refactor"],
+    "tags": [
+      "planning",
+      "refactor",
+      "architecture"
+    ]
+  },
+  {
+    "filename": "2026-01-03-training-ui-material-evolution.md",
+    "experiment_id": "exp-26W01-001",
+    "title": "训练 UI 优化：添加素材演变面板",
+    "date": "2026-01-03",
+    "created_at": "2026-01-03T11:42:00+08:00",
+    "related_tasks": ["ui-training-evolution", "material-evolution"],
+    "tags": [
+      "ui",
+      "training",
+      "001"
+    ]
+  },
+  {
     "filename": "2026-01-01-wechat-covers-000-003.md",
     "experiment_id": "exp-25W52-000",
     "title": "公众号题图生成Agent可用",
     "date": "2026-01-01",
+    "related_tasks": ["wechat-cover-agent"],
     "tags": [
       "marketing",
       "wechat",
@@ -16,6 +43,7 @@
     "experiment_id": "exp-26W01-001",
     "title": "开始 #001: 写作训练系统",
     "date": "2025-12-31",
+    "related_tasks": ["init-001"],
     "tags": [
       "init",
       "writing",
@@ -27,6 +55,7 @@
     "experiment_id": "exp-25W52-000",
     "title": "UI Tweaks: Navbar dropdown & Compact Log List",
     "date": "2025-12-31",
+    "related_tasks": ["navbar-dropdown", "compact-log-list"],
     "tags": [
       "ui",
       "navbar",
@@ -38,6 +67,7 @@
     "experiment_id": "exp-25W52-000",
     "title": "UI Refactoring: Navigation & Experiment List",
     "date": "2025-12-28",
+    "related_tasks": ["ui-refactor", "nav-refactor", "exp-list-refactor"],
     "tags": [
       "ui",
       "refactor",
@@ -49,6 +79,7 @@
     "experiment_id": "exp-25W52-000",
     "title": "Fix Markdown rendering in Experiment Logs",
     "date": "2025-12-28",
+    "related_tasks": ["markdown-rendering"],
     "tags": [
       "frontend",
       "elog"
@@ -59,6 +90,7 @@
     "experiment_id": "exp-25W52-000",
     "title": "Add docker-compose for PocketBase",
     "date": "2025-12-27",
+    "related_tasks": ["docker-compose"],
     "tags": [
       "infra",
       "dev"
@@ -69,6 +101,7 @@
     "experiment_id": "exp-25W52-000",
     "title": "Log System Initialization",
     "date": "2025-12-26",
+    "related_tasks": ["elog-system"],
     "tags": [
       "meta",
       "planning"

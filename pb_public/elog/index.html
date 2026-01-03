@@ -45,9 +45,23 @@
     window.addEventListener('load', handleRoute);
 
     // Language handling
+    let langChangeListenerAttached = false;
+
     window.addEventListener('lang-change', (e) => {
       currentLang = e.detail.lang;
-      handleRoute();
+      // Only re-render content on first event to avoid infinite loop with NavBar.init()
+      // Subsequent lang changes won't trigger re-render to prevent infinite fetch loops
+      if (!langChangeListenerAttached) {
+        langChangeListenerAttached = true;
+        const currentHash = window.location.hash || '#/';
+        if (currentHash === '#/tasks') {
+          renderTasks();
+        } else if (currentHash.startsWith('#/') && currentHash.length > 2) {
+          renderLogDetail(currentHash.substring(2));
+        } else {
+          renderLogList();
+        }
+      }
     });
 
     // Markdown Renderer setup
@@ -100,16 +114,15 @@
 
       if (hash === '#/tasks') {
         renderTasks();
+      } else if (hash.startsWith('#/experiments/')) {
+        const experimentId = hash.substring(14);
+        setExperimentIdFilter(experimentId);
+        renderLogList(experimentId);
       } else if (hash.startsWith('#/') && hash.length > 2) {
         renderLogDetail(hash.substring(2));
       } else {
         renderLogList();
       }
-    }
-
-    function getExperimentIdFilter() {
-      const url = new URL(window.location.href);
-      return url.searchParams.get('experiment_id') || url.searchParams.get('experimentId') || url.searchParams.get('eid') || '';
     }
 
     function setExperimentIdFilter(value) {
@@ -120,7 +133,12 @@
       window.history.replaceState(null, '', url.pathname + url.search + url.hash);
     }
 
-    async function renderLogList() {
+    function getExperimentIdFilter() {
+      const url = new URL(window.location.href);
+      return url.searchParams.get('experiment_id') || url.searchParams.get('experimentId') || url.searchParams.get('eid') || '';
+    }
+
+    async function renderLogList(experimentIdFromRoute = null) {
       const content = document.getElementById('main-content');
       content.innerHTML = '<div class="flex justify-center py-24"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
 
@@ -133,7 +151,7 @@
         const logs = await manifestRes.json();
         logs.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        const experimentIdFilter = getExperimentIdFilter().trim();
+        const experimentIdFilter = (experimentIdFromRoute || getExperimentIdFilter()).trim();
         const allExperimentIds = Array.from(new Set(logs.map(log => String(log?.experiment_id || '').trim()).filter(Boolean))).sort();
         const filteredLogs = experimentIdFilter ? logs.filter(log => String(log?.experiment_id || '').trim() === experimentIdFilter) : logs;
 
@@ -141,6 +159,12 @@
           <div class="max-w-6xl mx-auto px-6 py-16">
             <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
               <div>
+                ${experimentIdFilter ? `
+                  <a href="#/" class="inline-flex items-center text-sm font-bold text-gray-400 hover:text-black mb-4 transition-colors">
+                    <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                    ${currentLang === 'zh' ? '返回全部日志' : 'Back to All Logs'}
+                  </a>
+                ` : ''}
                 <h1 class="text-5xl md:text-6xl font-black tracking-tighter text-gray-900 mb-4">${currentLang === 'zh' ? '实验日志' : 'Logs'}</h1>
                 <p class="text-xl text-gray-500 font-medium">${currentLang === 'zh' ? '记录实验进展与深度思考' : 'Tracking progress and deep thoughts'}</p>
               </div>
@@ -157,8 +181,14 @@
                 </div>
               </div>
             </div>
+            ${experimentIdFilter ? `
+              <div class="mb-8 p-4 bg-accent/5 rounded-xl border border-accent/20">
+                <span class="text-sm font-bold text-accent">${currentLang === 'zh' ? '显示与实验相关日志:' : 'Showing logs for experiment:'}</span>
+                <span class="ml-2 px-3 py-1 bg-accent text-white text-sm font-bold rounded-full">${escapeHtml(experimentIdFilter)}</span>
+              </div>
+            ` : ''}
             <div class="grid grid-cols-1 gap-4">
-              ${filteredLogs.map(log => `
+              ${filteredLogs.length > 0 ? filteredLogs.map(log => `
                 <a href="#/${log.filename}" class="bold-card group p-6 md:p-8 rounded-[2rem]">
                   <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div class="min-w-0">
@@ -176,7 +206,11 @@
                     </div>
                   </div>
                 </a>
-              `).join('')}
+              `).join('') : `
+                <div class="text-center py-16 glass rounded-[2rem] border-dashed">
+                  <p class="text-gray-400 font-bold text-xl">${currentLang === 'zh' ? '暂无日志' : 'No logs found.'}</p>
+                </div>
+              `}
             </div>
           </div>`;
         content.innerHTML = html;
@@ -201,14 +235,25 @@
         const lines = markdown.split('\n');
         const board = [];
         let currentColumn = null;
+        let currentTask = null;
 
         lines.forEach(line => {
           const trimmed = line.trim();
           if (trimmed.startsWith('## ')) {
             if (currentColumn) board.push(currentColumn);
             currentColumn = { title: trimmed.substring(3).trim(), tasks: [] };
+            currentTask = null;
           } else if (trimmed.startsWith('- [ ] ') || trimmed.startsWith('- [x] ')) {
-            if (currentColumn) currentColumn.tasks.push({ text: trimmed.substring(6).trim(), isDone: trimmed.startsWith('- [x] ') });
+            if (currentColumn) {
+              currentTask = { text: trimmed.substring(6).trim(), isDone: trimmed.startsWith('- [x] '), experimentId: '', detail: '' };
+              currentColumn.tasks.push(currentTask);
+            }
+          } else if (line.startsWith('  - experiment_id:') && currentTask) {
+            currentTask.experimentId = line.substring(18).trim();
+          } else if (line.startsWith('  - detail:') && currentTask) {
+            currentTask.detail = line.substring(11).trim();
+          } else if (trimmed.startsWith('> ') && currentTask && currentTask.detail) {
+            currentTask.detail += ' ' + trimmed.substring(2).trim();
           }
         });
         if (currentColumn) board.push(currentColumn);
@@ -239,7 +284,22 @@
                             <div class="mt-1 ${task.isDone ? 'text-green-500' : 'text-gray-200'} shrink-0">
                               ${task.isDone ? '<span class="text-xl leading-none">✅</span>' : '<div class="w-5 h-5 border-4 border-current rounded-lg"></div>'}
                             </div>
-                            <span class="font-bold text-gray-900 leading-tight ${task.isDone ? 'line-through' : ''}">${escapeHtml(task.text)}</span>
+                            <div class="flex-1 min-w-0">
+                              <span class="font-bold text-gray-900 leading-tight ${task.isDone ? 'line-through' : ''}">${escapeHtml(task.text)}</span>
+                              ${task.detail ? `
+                                <p class="mt-3 text-sm text-gray-500 leading-relaxed">${escapeHtml(task.detail)}</p>
+                              ` : ''}
+                              ${task.experimentId ? `
+                                <a href="/#/${task.experimentId}" class="mt-3 inline-flex items-center text-xs font-bold text-accent hover:text-black transition-colors">
+                                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                  ${currentLang === 'zh' ? '查看实验' : 'View Experiment'}
+                                </a>
+                                <a href="/elog/#/experiments/${task.experimentId}" class="mt-3 ml-3 inline-flex items-center text-xs font-bold text-gray-400 hover:text-black transition-colors">
+                                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                  ${currentLang === 'zh' ? '相关日志' : 'Logs'}
+                                </a>
+                              ` : ''}
+                            </div>
                           </div>
                         </div>
                       `).join('')}
@@ -260,26 +320,55 @@
       content.innerHTML = '<div class="flex justify-center py-24"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
 
       try {
-        const [manifestRes, contentRes] = await Promise.all([
+        const [manifestRes, contentRes, tasksRes] = await Promise.all([
           fetch(noCacheUrl('/elog/manifest.json'), { cache: 'no-store' }),
-          fetch(noCacheUrl('/elog/' + filename), { cache: 'no-store' })
+          fetch(noCacheUrl('/elog/' + filename), { cache: 'no-store' }),
+          fetch(noCacheUrl('/elog/tasks.md'), { cache: 'no-store' })
         ]);
         const logs = await manifestRes.json();
         const meta = logs.find(l => l.filename === filename);
         const markdown = await contentRes.text();
         const renderedHtml = window.marked.parse(markdown);
 
+        const tasksMarkdown = await tasksRes.text();
+        const taskLines = tasksMarkdown.split('\n');
+        const allTasks = [];
+        let currentTask = null;
+
+        taskLines.forEach(line => {
+          const trimmed = line.trim();
+          const taskIdMatch = trimmed.match(/\[([^\]]+)\]$/);
+          if (trimmed.startsWith('- [ ] ') || trimmed.startsWith('- [x] ')) {
+            const taskIds = taskIdMatch 
+              ? taskIdMatch[1].split(',').map(id => id.trim()) 
+              : [];
+            currentTask = { 
+              text: trimmed.substring(6).replace(/\s*\[[^\]]+\]$/, '').trim(), 
+              isDone: trimmed.startsWith('- [x] '),
+              taskIds: taskIds
+            };
+            allTasks.push(currentTask);
+          }
+        });
+
+        const relatedTasks = (meta?.related_tasks || []).map(taskId => {
+          let task = allTasks.find(t => t.taskIds.includes(taskId));
+          if (task) return { ...task, taskId };
+          task = allTasks.find(t => t.text.toLowerCase().includes(taskId.toLowerCase()));
+          return task ? { ...task, taskId } : { text: taskId, isDone: false, taskIds: [taskId], taskId };
+        });
+
         content.innerHTML = `
           <div class="max-w-4xl mx-auto px-6 py-16">
             <a href="#/" class="inline-flex items-center text-sm font-bold text-gray-400 hover:text-black mb-12 transition-colors uppercase tracking-widest">
-              <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+              <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               ${currentLang === 'zh' ? '返回日志' : 'Back'}
             </a>
             ${meta ? `
               <div class="mb-16 border-b border-gray-100 pb-16">
                  <div class="flex items-center gap-4 mb-6">
                     <span class="text-xs font-black text-accent uppercase tracking-widest">${meta.date}</span>
-                    <span class="px-2 py-0.5 border border-gray-200 rounded text-[10px] font-black text-gray-400 uppercase tracking-tighter">${escapeHtml(meta.experiment_id || 'GENERAL')}</span>
+                    <a href="/elog/#/experiments/${meta.experiment_id}" class="px-2 py-0.5 border border-gray-200 rounded text-[10px] font-black text-gray-400 uppercase tracking-tighter hover:border-black hover:text-black transition-colors">${escapeHtml(meta.experiment_id || 'GENERAL')}</a>
                  </div>
                  <h1 class="text-5xl md:text-7xl font-black text-gray-900 tracking-tighter leading-none mb-8">${meta.title}</h1>
                  <div class="flex flex-wrap gap-2">
@@ -287,6 +376,21 @@
                  </div>
               </div>` : ''}
             <article class="prose-modern max-w-none">${renderedHtml}</article>
+            ${relatedTasks.length > 0 ? `
+              <div class="mt-16 pt-8 border-t border-gray-100">
+                <h3 class="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">${currentLang === 'zh' ? '相关任务' : 'Related Tasks'}</h3>
+                <div class="space-y-4">
+                  ${relatedTasks.map(task => `
+                    <a href="/elog/#/tasks" class="block bold-card p-4 rounded-xl hover:border-accent transition-colors">
+                      <div class="flex items-center gap-3">
+                        <span class="text-sm ${task.isDone ? 'text-green-500' : 'text-gray-300'}">${task.isDone ? '✅' : '⬜'}</span>
+                        <span class="font-bold text-gray-900">${escapeHtml(task.text)}</span>
+                      </div>
+                    </a>
+                  `).join('')}
+                </div>
+              </div>
+            ` : ''}
           </div>`;
       } catch (err) {
         console.error(err);

@@ -126,7 +126,7 @@ Lab 的存在目的只有一个：
 
 ### 7.1 Agent 的角色定义
 
-- Agent 代表“岗位”，不是一次性 Prompt
+- Agent 代表"岗位"，不是一次性 Prompt
 - 每个 Agent 必须有明确边界
 
 ### 7.2 核心 Agent（v1）
@@ -136,17 +136,46 @@ Lab 的存在目的只有一个：
 
 ### 7.3 通用工作流规范 (General Workflow)
 
+> ⚠️ **重要：任务排序规范**
+> 
+> 所有任务列表（Backlog、In Progress、Completed）**必须倒序排列**：
+> - 新任务添加在**最上面**
+> - 新完成的任务移动到**最上面**
+> - 示例：
+>   ```
+>   ## Backlog
+>   - [ ] 新任务 (2026-01-03) ← 最新在最上面
+>   - [ ] 旧任务 (2025-12-01) ← 最旧在下面
+>   ```
+> 
+> **违反此规范的任务更新将被视为不合格。**
+
 所有 Agent 在执行任务时必须严格遵守：
 
 1.  **任务追踪 (Task Tracking)**
     -   **Before**: 开始任何复杂任务前，必须读取 `pb_public/elog/tasks.md`。
-    -   **Action**: 将当前任务添加到 `In Progress` 列表。
-    -   **After**: 任务完成后，将其移动到 `Completed` 列表。
+    -   **Action**: 将当前任务添加到 `In Progress` 列表**顶部**。
+    -   **After**: 任务完成后，将其移动到 `Completed` 列表**顶部**。
 
 2.  **实验记录 (Experiment Logging)**
     -   Agent 不仅是执行者，也是记录员。
     -   在修改代码的同时，应主动维护实验日志（elog）。
     -   记录内容包括：尝试了什么方案、遇到了什么错误、最终如何解决。
+
+3.  **日志文件命名规范**
+    -   格式：`YYYY-MM-DD-文件名.md`
+    -   每个日志文件必须包含 `created_at` 字段（ISO 8601 格式）
+    -   每个日志文件必须包含 `related_tasks` 字段（关联的任务 ID 列表）
+
+4.  **日志索引维护**
+    -   每次添加新日志后，必须更新 `pb_public/elog/manifest.json`
+    -   manifest.json 包含：`id`、`created_at`、`title`、`related_tasks`、文件路径
+    -   **manifest.json 必须按 `created_at` 倒序排列**（最新的在前）
+
+5.  **任务列表排序**
+    -   所有任务列表（Backlog、In Progress、Completed）**必须按创建/完成时间倒序排列**
+    -   最新完成的任务在最上面
+    -   最高优先级的待办在最上面
 
 ---
 

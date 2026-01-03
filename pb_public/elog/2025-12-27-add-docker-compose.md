@@ -1,5 +1,8 @@
 # Add docker-compose for PocketBase
 
+> created_at: 2025-12-27T14:00:00+08:00
+> related_tasks: ["docker-compose", "pocketbase"]
+
 Date: 2025-12-27
 
 ## Goal

@@ -1,5 +1,8 @@
 # UI Tweaks: Navbar dropdown & Compact Log List
 
+> created_at: 2025-12-31T10:00:00+08:00
+> related_tasks: ["navbar-dropdown", "elog-compact"]
+
 Date: 2025-12-31
 
 ## Context
