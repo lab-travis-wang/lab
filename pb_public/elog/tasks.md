@@ -20,6 +20,9 @@
 - [ ] **连接真实 AI API**
   - detail: 集成腾讯云 AI 网关，整合国内免费 Token（深言、通义等），实现真正的流式输出 (SSE)
   - experiment_id: exp-26W01-001
+- [ ] 调研身体结构 3D 展示
+  - experiment_id: exp-26W01-002
+
 
 ## Completed
 - [x] 任务支持显示详细说明 (2026-01-03)

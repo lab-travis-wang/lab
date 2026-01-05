@@ -1,5 +1,18 @@
 [
   {
+    "filename": "2026-01-03-002-anatomy-3d-research.md",
+    "experiment_id": "exp-26W01-002",
+    "title": "实验002 - 人体骨骼肌肉3D可视化 调研记录",
+    "date": "2026-01-03",
+    "created_at": "2026-01-03T18:30:00+08:00",
+    "related_tasks": ["002-anatomy-3d"],
+    "tags": [
+      "research",
+      "3d",
+      "anatomy"
+    ]
+  },
+  {
     "filename": "2026-01-03-task-log-refactor-plan.md",
     "experiment_id": "exp-25W52-000",
     "title": "任务与日志系统重构规划",
