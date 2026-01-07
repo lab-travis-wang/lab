@@ -1,4 +1,16 @@
 [
+
+  {
+    "id": "exp-25W52-000",
+    "name": "the LAB",
+    "description": "这个 Lab 本身就是一个实验",
+    "status": "已上线",
+    "created": "2025-12-25T00:00:00.000Z",
+    "url": "https://lab.travis.wang",
+    "repo": "https://github.com/lab-travis-wang/lab",
+    "icon": "⚗️"
+  },
+
   {
     "id": "exp-26W01-001",
     "name": "写作001",
@@ -29,14 +41,14 @@
     "repo": "",
     "icon": "🧩"
   },
-  {
-    "id": "exp-25W52-000",
-    "name": "the LAB",
-    "description": "这个 Lab 本身就是一个实验",
-    "status": "已上线",
-    "created": "2025-12-25T00:00:00.000Z",
-    "url": "https://lab.travis.wang",
-    "repo": "https://github.com/lab-travis-wang/lab",
-    "icon": "⚗️"
+    {
+    "id": "exp-26W02-004",
+    "name": "世界史时间线",
+    "description": "一个展示世界历史重要事件的时间线工具。<br>更直观地理解历史上同一时间全球都在发生什么。",
+    "status": "等待评估",
+    "created": "2026-01-07T13:27:00.000Z",
+    "url": "",
+    "repo": "",
+    "icon": "🌍"
   }
 ]

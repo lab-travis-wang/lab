@@ -45,22 +45,18 @@
     window.addEventListener('load', handleRoute);
 
     // Language handling
-    let langChangeListenerAttached = false;
-
     window.addEventListener('lang-change', (e) => {
       currentLang = e.detail.lang;
-      // Only re-render content on first event to avoid infinite loop with NavBar.init()
-      // Subsequent lang changes won't trigger re-render to prevent infinite fetch loops
-      if (!langChangeListenerAttached) {
-        langChangeListenerAttached = true;
-        const currentHash = window.location.hash || '#/';
-        if (currentHash === '#/tasks') {
-          renderTasks();
-        } else if (currentHash.startsWith('#/') && currentHash.length > 2) {
-          renderLogDetail(currentHash.substring(2));
-        } else {
-          renderLogList();
-        }
+      // Avoid duplicate initial render: handleRoute() already renders on load/hashchange
+      if (e.detail && e.detail.source === 'init') return;
+
+      const currentHash = window.location.hash || '#/';
+      if (currentHash === '#/tasks') {
+        renderTasks();
+      } else if (currentHash.startsWith('#/') && currentHash.length > 2) {
+        renderLogDetail(currentHash.substring(2));
+      } else {
+        renderLogList();
       }
     });
 

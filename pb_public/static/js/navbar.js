@@ -29,7 +29,7 @@ const NavBar = {
     window.setLang = (lang) => this.setLang(lang);
 
     // Initial sync for other components
-    window.dispatchEvent(new CustomEvent('lang-change', { detail: { lang: this.currentLang } }));
+    window.dispatchEvent(new CustomEvent('lang-change', { detail: { lang: this.currentLang, source: 'init' } }));
   },
 
   setLang(lang) {
@@ -40,7 +40,7 @@ const NavBar = {
     this.render();
 
     // Dispatch event for page content to update
-    window.dispatchEvent(new CustomEvent('lang-change', { detail: { lang } }));
+    window.dispatchEvent(new CustomEvent('lang-change', { detail: { lang, source: 'user' } }));
   },
 
   setTab(tab) {

@@ -166,27 +166,31 @@
       handleRoute();
     });
 
-    // Listen for lang changes from NavBar
-    let langChangeListenerAttached = false;
+    function renderCurrentRoute() {
+      const hash = window.location.hash;
+      if (!hash || hash === '#/') {
+        renderHome();
+        return;
+      }
+      if (hash === '#/experiments') {
+        renderExperiments();
+        return;
+      }
+      if (hash.startsWith('#/')) {
+        const id = hash.substring(2);
+        if (id) renderDetail(id);
+        else renderHome();
+        return;
+      }
+      renderHome();
+    }
 
+    // Listen for lang changes from NavBar
     window.addEventListener('lang-change', (e) => {
       currentLang = e.detail.lang;
-
-      // Only re-render if we haven't attached the listener yet (initial load)
-      // This prevents infinite loop: lang-change -> render -> NavBar.init -> lang-change
-      if (!langChangeListenerAttached) {
-        langChangeListenerAttached = true;
-        const hash = window.location.hash;
-        if (hash.startsWith('#/experiments')) {
-          renderExperiments();
-        } else if (hash.startsWith('#/')) {
-          const id = hash.substring(2);
-          if (id) renderDetail(id);
-          else renderHome();
-        } else {
-          renderHome();
-        }
-      }
+      // Avoid duplicate initial render: handleRoute() will render once on load/hashchange
+      if (e.detail && e.detail.source === 'init') return;
+      renderCurrentRoute();
     });
 
     function handleRoute() {
@@ -220,7 +224,6 @@
 
     // Views
     function renderHome() {
-      window.location.hash = '#/';
       const content = document.getElementById('main-content');
       const isZh = currentLang === 'zh';
 
@@ -395,7 +398,6 @@
     }
 
     async function renderExperiments() {
-      window.location.hash = '#/experiments';
       const content = document.getElementById('main-content');
       content.innerHTML = '<div class="flex justify-center py-24"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>'; // Loading
 
@@ -486,7 +488,6 @@
     }
 
     async function renderDetail(id) {
-      window.location.hash = '#/' + id;
       const content = document.getElementById('main-content');
       content.innerHTML = '<div class="flex justify-center py-24"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>';
 
