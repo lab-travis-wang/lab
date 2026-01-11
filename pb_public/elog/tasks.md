@@ -17,6 +17,9 @@
   - experiment_id: exp-25W52-000
 
 ## In Progress
+- [/] **重启实验 001：迁移至 Taro 框架以支持微信小程序** [restart-001]
+  - detail: 重新初始化项目结构，配置 Taro 开发环境，准备 MVP 开发
+  - experiment_id: exp-26W01-001
 - [ ] **连接真实 AI API**
   - detail: 集成腾讯云 AI 网关，整合国内免费 Token（深言、通义等），实现真正的流式输出 (SSE)
   - experiment_id: exp-26W01-001
